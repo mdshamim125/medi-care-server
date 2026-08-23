@@ -1,60 +1,71 @@
-import express, { NextFunction, Request, Response } from "express";
-import { UserController } from "./user.controller";
-import { fileUploader } from "../../helper/fileUploader";
-import { UserValidation } from "./user.validation";
-import { UserRole } from "@prisma/client";
-import auth from "../../middlewares/auth";
+import { UserRole } from '@prisma/client';
+import express, { NextFunction, Request, Response } from 'express';
+// import { fileUploader } from '../../../helpers/fileUploader';
+import auth from '../../middlewares/auth';
+import validateRequest from '../../middlewares/validateRequest';
+import { userController } from './user.controller';
+import { userValidation } from './user.validation';
+import { fileUploader } from '../../helpers/fileUploader';
 
 const router = express.Router();
 
-router.get("/", auth(UserRole.ADMIN), UserController.getAllFromDB);
+router.get(
+    '/',
+    auth(UserRole.SUPER_ADMIN, UserRole.ADMIN),
+    userController.getAllFromDB
+);
 
 router.get(
-  "/me",
-  auth(UserRole.ADMIN, UserRole.DOCTOR, UserRole.PATIENT),
-  UserController.getMyProfile,
+    '/me',
+    auth(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.DOCTOR, UserRole.PATIENT),
+    userController.getMyProfile
+)
+
+router.post(
+    "/create-admin",
+    auth(UserRole.SUPER_ADMIN, UserRole.ADMIN),
+    fileUploader.upload.single('file'),
+    (req: Request, res: Response, next: NextFunction) => {
+        req.body = userValidation.createAdmin.parse(JSON.parse(req.body.data))
+        return userController.createAdmin(req, res, next)
+    }
 );
 
 router.post(
-  "/create-patient",
-  fileUploader.upload.single("file"),
-  (req: Request, res: Response, next: NextFunction) => {
-    req.body = UserValidation.createPatientValidationSchema.parse(
-      JSON.parse(req.body.data),
-    );
-    return UserController.createPatient(req, res, next);
-  },
+    "/create-doctor",
+    auth(UserRole.SUPER_ADMIN, UserRole.ADMIN),
+    fileUploader.upload.single('file'),
+    (req: Request, res: Response, next: NextFunction) => {
+        req.body = userValidation.createDoctor.parse(JSON.parse(req.body.data))
+        return userController.createDoctor(req, res, next)
+    }
 );
 
 router.post(
-  "/create-admin",
-  auth(UserRole.ADMIN),
-  fileUploader.upload.single("file"),
-  (req: Request, res: Response, next: NextFunction) => {
-    req.body = UserValidation.createAdminValidationSchema.parse(
-      JSON.parse(req.body.data),
-    );
-    return UserController.createAdmin(req, res, next);
-  },
-);
-
-router.post(
-  "/create-doctor",
-  auth(UserRole.ADMIN),
-  fileUploader.upload.single("file"),
-  (req: Request, res: Response, next: NextFunction) => {
-    console.log(JSON.parse(req.body.data));
-    req.body = UserValidation.createDoctorValidationSchema.parse(
-      JSON.parse(req.body.data),
-    );
-    return UserController.createDoctor(req, res, next);
-  },
+    "/create-patient",
+    fileUploader.upload.single('file'),
+    (req: Request, res: Response, next: NextFunction) => {
+        req.body = userValidation.createPatient.parse(JSON.parse(req.body.data))
+        return userController.createPatient(req, res, next)
+    }
 );
 
 router.patch(
-  "/:id/status",
-  auth(UserRole.ADMIN),
-  UserController.changeProfileStatus,
+    '/:id/status',
+    auth(UserRole.SUPER_ADMIN, UserRole.ADMIN),
+    validateRequest(userValidation.updateStatus),
+    userController.changeProfileStatus
 );
+
+router.patch(
+    "/update-my-profile",
+    auth(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.DOCTOR, UserRole.PATIENT),
+    fileUploader.upload.single('file'),
+    (req: Request, res: Response, next: NextFunction) => {
+        req.body = JSON.parse(req.body.data)
+        return userController.updateMyProfie(req, res, next)
+    }
+);
+
 
 export const userRoutes = router;

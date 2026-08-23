@@ -1,18 +1,23 @@
 import express from "express";
 import { userRoutes } from "../modules/user/user.routes";
+import { AdminRoutes } from "../modules/admin/admin.routes";
 import { authRoutes } from "../modules/auth/auth.routes";
-import { ScheduleRoutes } from "../modules/schedule/schedule.routes";
-import { doctorScheduleRoutes } from "../modules/doctorSchedule/doctorSchedule.routes";
 import { SpecialtiesRoutes } from "../modules/specialties/specialties.routes";
 import { DoctorRoutes } from "../modules/doctor/doctor.routes";
-import { AdminRoutes } from "../modules/admin/admin.routes";
 import { PatientRoutes } from "../modules/patient/patient.routes";
-import { AppointmentRoutes } from "../modules/appointment/appointment.routes";
+import { ScheduleRoutes } from "../modules/schedule/schedule.routes";
+import { doctorScheduleRoutes } from "../modules/doctorSchedule/doctorSchedule.routes";
 import { PrescriptionRoutes } from "../modules/prescription/prescription.routes";
 import { ReviewRoutes } from "../modules/review/review.routes";
 import { MetaRoutes } from "../modules/meta/meta.routes";
+import { AppointmentRoutes } from "../modules/appointment/appointment.routes";
+import { PaymentRoutes } from "../modules/payment/payment.routes";
+import { apiLimiter } from "../middlewares/rateLimiter";
+
 
 const router = express.Router();
+
+router.use(apiLimiter); // Apply to all routes
 
 const moduleRoutes = [
   {
@@ -20,16 +25,12 @@ const moduleRoutes = [
     route: userRoutes,
   },
   {
+    path: "/admin",
+    route: AdminRoutes,
+  },
+  {
     path: "/auth",
     route: authRoutes,
-  },
-  {
-    path: "/schedule",
-    route: ScheduleRoutes,
-  },
-  {
-    path: "/doctor-schedule",
-    route: doctorScheduleRoutes,
   },
   {
     path: "/specialties",
@@ -40,16 +41,24 @@ const moduleRoutes = [
     route: DoctorRoutes,
   },
   {
-    path: "/admin",
-    route: AdminRoutes,
-  },
-  {
     path: "/patient",
     route: PatientRoutes,
   },
   {
+    path: "/schedule",
+    route: ScheduleRoutes,
+  },
+  {
+    path: "/doctor-schedule",
+    route: doctorScheduleRoutes,
+  },
+  {
     path: "/appointment",
     route: AppointmentRoutes,
+  },
+  {
+    path: "/payment",
+    route: PaymentRoutes,
   },
   {
     path: "/prescription",
@@ -60,7 +69,7 @@ const moduleRoutes = [
     route: ReviewRoutes,
   },
   {
-    path: "/metadata",
+    path: "/meta",
     route: MetaRoutes,
   },
 ];
