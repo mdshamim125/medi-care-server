@@ -1,8 +1,10 @@
-import { Admin, Prisma, UserStatus } from "@prisma/client";
+import { Admin, Prisma, UserRole, UserStatus } from "@prisma/client";
+import httpStatus from "http-status";
 import { adminSearchAbleFields } from "./admin.constant";
 import { IAdminFilterRequest } from "./admin.interface";
-import { IOptions, paginationHelper } from "../../helper/paginationHelper";
+import { IOptions, paginationHelper } from "../../helpers/paginationHelper";
 import { prisma } from "../../shared/prisma";
+import ApiError from "../../errors/ApiError";
 
 const getAllFromDB = async (params: IAdminFilterRequest, options: IOptions) => {
   const { page, limit, skip } = paginationHelper.calculatePagination(options);
@@ -98,12 +100,40 @@ const updateIntoDB = async (
   return result;
 };
 
-const deleteFromDB = async (id: string): Promise<Admin | null> => {
-  await prisma.admin.findUniqueOrThrow({
+const ensureAdminCanBeDeleted = async (
+  id: string,
+  requesterEmail?: string,
+  requesterRole?: UserRole,
+) => {
+  if (requesterRole !== UserRole.SUPER_ADMIN) {
+    throw new ApiError(
+      httpStatus.FORBIDDEN,
+      "Only super admin can delete admins",
+    );
+  }
+
+  const admin = await prisma.admin.findUniqueOrThrow({
     where: {
       id,
     },
+    include: { user: true },
   });
+
+  if (admin.email === requesterEmail) {
+    throw new ApiError(httpStatus.FORBIDDEN, "You cannot delete yourself");
+  }
+
+  if (admin.user.role === UserRole.SUPER_ADMIN) {
+    throw new ApiError(httpStatus.FORBIDDEN, "Super admin cannot be deleted");
+  }
+};
+
+const deleteFromDB = async (
+  id: string,
+  requesterEmail?: string,
+  requesterRole?: UserRole,
+): Promise<Admin | null> => {
+  await ensureAdminCanBeDeleted(id, requesterEmail, requesterRole);
 
   const result = await prisma.$transaction(async (transactionClient) => {
     const adminDeletedData = await transactionClient.admin.delete({
@@ -124,7 +154,12 @@ const deleteFromDB = async (id: string): Promise<Admin | null> => {
   return result;
 };
 
-const softDeleteFromDB = async (id: string): Promise<Admin | null> => {
+const softDeleteFromDB = async (
+  id: string,
+  requesterEmail?: string,
+  requesterRole?: UserRole,
+): Promise<Admin | null> => {
+  await ensureAdminCanBeDeleted(id, requesterEmail, requesterRole);
   await prisma.admin.findUniqueOrThrow({
     where: {
       id,

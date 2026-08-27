@@ -1,14 +1,18 @@
-import { Request } from "express";
-import { fileUploader } from "../../helper/fileUploader";
-import { prisma } from "../../shared/prisma";
 import { Specialties } from "@prisma/client";
+import { Request } from "express";
+import { fileUploader } from "../../helpers/fileUploader";
+import { prisma } from "../../shared/prisma";
+import { IPaginationOptions } from "../../interfaces/pagination";
+import { paginationHelper } from "../../helpers/paginationHelper";
 
 const inserIntoDB = async (req: Request) => {
   const file = req.file;
 
   if (file) {
     const uploadToCloudinary = await fileUploader.uploadToCloudinary(file);
-    req.body.icon = uploadToCloudinary?.secure_url;
+    req.body.icon =
+      uploadToCloudinary?.secure_url ||
+      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSUt8fMpTNm21X2t0eKUifTpFgthmvuBFi26CrSnCokdg&s=10";
   }
 
   const result = await prisma.specialties.create({
@@ -18,8 +22,28 @@ const inserIntoDB = async (req: Request) => {
   return result;
 };
 
-const getAllFromDB = async (): Promise<Specialties[]> => {
-  return await prisma.specialties.findMany();
+const getAllFromDB = async (options: IPaginationOptions) => {
+  const { limit, page, skip } = paginationHelper.calculatePagination(options);
+
+  const result = await prisma.specialties.findMany({
+    skip,
+    take: limit,
+    orderBy:
+      options.sortBy && options.sortOrder
+        ? { [options.sortBy]: options.sortOrder }
+        : { createdAt: "desc" },
+  });
+
+  const total = await prisma.specialties.count();
+
+  return {
+    meta: {
+      total,
+      page,
+      limit,
+    },
+    data: result,
+  };
 };
 
 const deleteFromDB = async (id: string): Promise<Specialties> => {

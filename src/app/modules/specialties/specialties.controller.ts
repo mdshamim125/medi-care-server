@@ -1,10 +1,11 @@
 import { Request, Response } from "express";
 import httpStatus from "http-status";
+import { SpecialtiesService } from "./specialties.service";
 import catchAsync from "../../shared/catchAsync";
 import sendResponse from "../../shared/sendResponse";
-import { SpecialtiesService } from "./specialties.service";
+import pick from "../../helpers/pick";
 
-const inserIntoDB = catchAsync(async (req: Request, res: Response) => {
+const insertIntoDB = catchAsync(async (req: Request, res: Response) => {
   const result = await SpecialtiesService.inserIntoDB(req);
 
   sendResponse(res, {
@@ -16,12 +17,14 @@ const inserIntoDB = catchAsync(async (req: Request, res: Response) => {
 });
 
 const getAllFromDB = catchAsync(async (req: Request, res: Response) => {
-  const result = await SpecialtiesService.getAllFromDB();
+  const options = pick(req.query, ["limit", "page", "sortBy", "sortOrder"]);
+  const result = await SpecialtiesService.getAllFromDB(options);
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
     message: "Specialties data fetched successfully",
-    data: result,
+    meta: result.meta,
+    data: result.data,
   });
 });
 
@@ -37,7 +40,7 @@ const deleteFromDB = catchAsync(async (req: Request, res: Response) => {
 });
 
 export const SpecialtiesController = {
-  inserIntoDB,
+  insertIntoDB,
   getAllFromDB,
   deleteFromDB,
 };

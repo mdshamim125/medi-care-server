@@ -1,23 +1,39 @@
-import express from "express";
-import { DoctorController } from "./doctor.controller";
-import auth from "../../middlewares/auth";
-import { UserRole } from "@prisma/client";
+import express from 'express'
+import { DoctorController } from './doctor.controller';
+import auth from '../../middlewares/auth';
+import { UserRole } from '@prisma/client';
+import validateRequest from '../../middlewares/validateRequest';
+import { DoctorValidation } from './doctor.validation';
+
 const router = express.Router();
 
-router.get("/", DoctorController.getAllFromDB);
+// AI driven doctor suggestion
+router.post('/suggestion', DoctorController.getAiSuggestion);
 
-router.post("/suggestion", DoctorController.getAISuggestions);
+// task 3
+router.get('/', DoctorController.getAllFromDB);
 
-router.get("/:id", DoctorController.getByIdFromDB);
+//task 4
+router.get('/:id', DoctorController.getByIdFromDB);
 
 router.patch(
-  "/:id",
-  auth(UserRole.ADMIN, UserRole.DOCTOR),
-  DoctorController.updateIntoDB,
+    '/:id',
+    auth(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.DOCTOR),
+    validateRequest(DoctorValidation.update),
+    DoctorController.updateIntoDB
 );
 
-router.delete("/:id", auth(UserRole.ADMIN), DoctorController.deleteFromDB);
+//task 5
+router.delete(
+    '/:id',
+    auth(UserRole.SUPER_ADMIN, UserRole.ADMIN),
+    DoctorController.deleteFromDB
+);
 
-router.delete("/soft/:id", auth(UserRole.ADMIN), DoctorController.softDelete);
+// task 6
+router.delete(
+    '/soft/:id',
+    auth(UserRole.SUPER_ADMIN, UserRole.ADMIN),
+    DoctorController.softDelete);
 
-export const DoctorRoutes = router;
+export const DoctorRoutes = router

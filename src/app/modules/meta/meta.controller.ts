@@ -1,16 +1,18 @@
 import { Request, Response } from "express";
 import { MetaService } from "./meta.service";
 import httpStatus from "http-status";
-import catchAsync from "../../shared/catchAsync";
-import { IJWTPayload } from "../../types/common";
+import { IAuthUser } from "../../interfaces/common";
 import sendResponse from "../../shared/sendResponse";
+import catchAsync from "../../shared/catchAsync";
 
 const fetchDashboardMetaData = catchAsync(
-  async (req: Request & { user?: IJWTPayload }, res: Response) => {
+  async (req: Request & { user?: IAuthUser }, res: Response) => {
     const user = req.user;
-    const result = await MetaService.fetchDashboardMetaData(
-      user as IJWTPayload,
-    );
+    if (!user) {
+      throw new Error("Unauthorized");
+    }
+
+    const result = await MetaService.fetchDashboardMetaData(user);
 
     sendResponse(res, {
       statusCode: httpStatus.OK,
