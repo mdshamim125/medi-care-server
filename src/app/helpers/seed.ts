@@ -7,7 +7,7 @@ const seedSuperAdmin = async () => {
     try {
         const isExistSuperAdmin = await prisma.user.findFirst({
             where: {
-                role: UserRole.ADMIN
+                role: UserRole.SUPER_ADMIN
             }
         });
 
@@ -22,7 +22,7 @@ const seedSuperAdmin = async () => {
             data: {
                 email: "admin@gmail.com",
                 password: hashedPassword,
-                role: UserRole.ADMIN,
+                role: UserRole.SUPER_ADMIN,
                 admin: {
                     create: {
                         name: "Admin",

@@ -17,7 +17,7 @@ import { apiLimiter } from "../middlewares/rateLimiter";
 
 const router = express.Router();
 
-router.use(apiLimiter); // Apply to all routes
+// router.use(apiLimiter); // Apply to all routes
 
 const moduleRoutes = [
   {

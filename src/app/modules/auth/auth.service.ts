@@ -16,6 +16,8 @@ const loginUser = async (payload: { email: string; password: string }) => {
     },
   });
 
+  // console.log(payload, userData);
+
   const isCorrectPassword: boolean = await bcrypt.compare(
     payload.password,
     userData.password,
@@ -165,7 +167,7 @@ const forgotPassword = async (payload: { email: string }) => {
                             <!-- Header -->
                             <tr>
                                 <td style="padding: 40px 40px 20px 40px; text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px 8px 0 0;">
-                                    <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 600;">PH Health Care</h1>
+                                    <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 600;">Medi Care</h1>
                                 </td>
                             </tr>
                             <!-- Content -->
@@ -176,7 +178,7 @@ const forgotPassword = async (payload: { email: string }) => {
                                         Hello,
                                     </p>
                                     <p style="margin: 0 0 30px 0; color: #666666; font-size: 16px; line-height: 24px;">
-                                        We received a request to reset your password for your PH Health Care account. Click the button below to create a new password:
+                                        We received a request to reset your password for your Medi Care account. Click the button below to create a new password:
                                     </p>
                                     <!-- Button -->
                                     <table role="presentation" style="margin: 0 auto;">
@@ -210,7 +212,7 @@ const forgotPassword = async (payload: { email: string }) => {
                             <tr>
                                 <td style="padding: 30px 40px; background-color: #f8f9fa; border-radius: 0 0 8px 8px; text-align: center;">
                                     <p style="margin: 0 0 10px 0; color: #999999; font-size: 14px;">
-                                        © ${new Date().getFullYear()} PH Health Care. All rights reserved.
+                                        © ${new Date().getFullYear()} Medi Care. All rights reserved.
                                     </p>
                                     <p style="margin: 0; color: #999999; font-size: 12px;">
                                         This is an automated email. Please do not reply.

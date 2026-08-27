@@ -10,7 +10,9 @@ const inserIntoDB = async (req: Request) => {
 
   if (file) {
     const uploadToCloudinary = await fileUploader.uploadToCloudinary(file);
-    req.body.icon = uploadToCloudinary?.secure_url;
+    req.body.icon =
+      uploadToCloudinary?.secure_url ||
+      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSUt8fMpTNm21X2t0eKUifTpFgthmvuBFi26CrSnCokdg&s=10";
   }
 
   const result = await prisma.specialties.create({

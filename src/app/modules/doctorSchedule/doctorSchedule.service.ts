@@ -89,14 +89,23 @@ const getMySchedule = async (
   const whereConditions: Prisma.DoctorSchedulesWhereInput =
     andConditions.length > 0 ? { AND: andConditions } : {};
 
+  const orderBy: Prisma.DoctorSchedulesOrderByWithRelationInput =
+    options.sortBy === "schedule.startDateTime"
+      ? {
+          schedule: {
+            startDateTime: options.sortOrder === "asc" ? "asc" : "desc",
+          },
+        }
+      : {};
+
   const result = await prisma.doctorSchedules.findMany({
+    include: {
+      schedule: true,
+    },
     where: whereConditions,
     skip,
     take: limit,
-    orderBy:
-      options.sortBy && options.sortOrder
-        ? { [options.sortBy]: options.sortOrder }
-        : {},
+    orderBy,
   });
   const total = await prisma.doctorSchedules.count({
     where: whereConditions,

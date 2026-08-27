@@ -13,8 +13,6 @@ const auth = (...roles: string[]) => {
   ) => {
     try {
       const token = req.headers.authorization || req.cookies.accessToken;
-      console.log({ token }, "from auth guard");
-
       if (!token) {
         throw new ApiError(httpStatus.UNAUTHORIZED, "You are not authorized!");
       }
@@ -26,7 +24,12 @@ const auth = (...roles: string[]) => {
 
       req.user = verifiedUser;
 
-      if (roles.length && !roles.includes(verifiedUser.role)) {
+      const hasRole =
+        roles.length === 0 ||
+        roles.includes(verifiedUser.role) ||
+        (verifiedUser.role === "SUPER_ADMIN" && roles.includes("ADMIN"));
+
+      if (!hasRole) {
         throw new ApiError(httpStatus.FORBIDDEN, "Forbidden!");
       }
       next();

@@ -186,7 +186,6 @@ const resetPassword = catchAsync(
   async (req: Request & { user?: any }, res: Response) => {
     // Extract token from Authorization header (remove "Bearer " prefix)
     const authHeader = req.headers.authorization;
-    console.log({ authHeader });
     const token = authHeader ? authHeader.replace("Bearer ", "") : null;
     const user = req.user; // Will be populated if authenticated via middleware
 

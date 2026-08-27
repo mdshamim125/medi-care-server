@@ -7,22 +7,22 @@ import { adminValidationSchemas } from "./admin.validations";
 
 const router = express.Router();
 
-router.get("/", auth(UserRole.ADMIN), AdminController.getAllFromDB);
+router.get("/", auth(UserRole.ADMIN, UserRole.SUPER_ADMIN), AdminController.getAllFromDB);
 
-router.get("/:id", auth(UserRole.ADMIN), AdminController.getByIdFromDB);
+router.get("/:id", auth(UserRole.ADMIN, UserRole.SUPER_ADMIN), AdminController.getByIdFromDB);
 
 router.patch(
   "/:id",
-  auth(UserRole.ADMIN),
+  auth(UserRole.ADMIN, UserRole.SUPER_ADMIN),
   validateRequest(adminValidationSchemas.update),
   AdminController.updateIntoDB,
 );
 
-router.delete("/:id", auth(UserRole.ADMIN), AdminController.deleteFromDB);
+router.delete("/:id", auth(UserRole.ADMIN, UserRole.SUPER_ADMIN), AdminController.deleteFromDB);
 
 router.delete(
   "/soft/:id",
-  auth(UserRole.ADMIN),
+  auth(UserRole.ADMIN, UserRole.SUPER_ADMIN),
   AdminController.softDeleteFromDB,
 );
 
