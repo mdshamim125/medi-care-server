@@ -409,11 +409,21 @@ const updateMyProfie = async (user: IAuthUser, req: Request) => {
       data: req.body,
     });
   } else if (userInfo.role === UserRole.DOCTOR) {
+    const doctorUpdateData = { ...req.body };
+
+    if (doctorUpdateData.experience !== undefined) {
+      doctorUpdateData.experience = Number(doctorUpdateData.experience);
+    }
+
+    if (doctorUpdateData.appointmentFee !== undefined) {
+      doctorUpdateData.appointmentFee = Number(doctorUpdateData.appointmentFee);
+    }
+
     profileInfo = await prisma.doctor.update({
       where: {
         email: userInfo.email,
       },
-      data: req.body,
+      data: doctorUpdateData,
     });
   } else if (userInfo.role === UserRole.PATIENT) {
     profileInfo = await prisma.patient.update({

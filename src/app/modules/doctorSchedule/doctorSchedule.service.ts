@@ -39,7 +39,14 @@ const getMySchedule = async (
   const { limit, page, skip } = paginationHelper.calculatePagination(options);
   const { startDate, endDate, ...filterData } = filters;
 
-  const andConditions = [];
+  const andConditions: Prisma.DoctorSchedulesWhereInput[] = [];
+
+  // Get schedules only for the authenticated doctor
+  andConditions.push({
+    doctor: {
+      email: user!.email,
+    },
+  });
 
   if (startDate && endDate) {
     andConditions.push({
