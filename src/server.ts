@@ -12,9 +12,15 @@ async function bootstrap() {
     await seedSuperAdmin();
 
     // Start the server
-    server = app.listen(config.port, () => {
-      console.log(`🚀 Server is running on http://localhost:${config.port}`);
-    });
+    // server = app.listen(config.port, () => {
+    //   console.log(`🚀 Server is running on http://localhost:${config.port}`);
+    // });
+
+    const PORT = Number(config.port) || 5000;
+
+server = app.listen(PORT, "0.0.0.0", () => {
+  console.log(`🚀 Server is running on port ${PORT}`);
+});
 
     // Function to gracefully shut down the server
     const exitHandler = () => {
