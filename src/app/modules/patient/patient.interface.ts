@@ -6,7 +6,7 @@ export type IPatientFilterRequest = {
   contactNo?: string | undefined;
 };
 
-type IPatientHealthData = {
+export type IPatientHealthData = {
   gender: Gender;
   dateOfBirth: string;
   bloodGroup: BloodGroup;
@@ -25,7 +25,7 @@ type IPatientHealthData = {
   maritalStatus?: MaritalStatus;
 };
 
-type IMedicalReport = {
+export type IMedicalReport = {
   reportName: string;
   reportLink: string;
 };
@@ -36,4 +36,32 @@ export type IPatientUpdate = {
   address: string;
   patientHealthData: IPatientHealthData;
   medicalReport: IMedicalReport;
+};
+
+// Patient Profile - for authenticated patient viewing their own profile
+export type IPatientProfile = {
+  id: string;
+  email: string;
+  name: string;
+  profilePhoto?: string | null;
+  contactNumber?: string | null;
+  address?: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  patientHealthData?: IPatientHealthData | null;
+  medicalReport?: Array<{
+    id: string;
+    reportName: string;
+    reportLink: string;
+    createdAt: Date;
+  }>;
+};
+
+// Health Data Update Request
+export type IPatientHealthDataUpdate = Partial<IPatientHealthData>;
+
+// Medical Report Upload
+export type IMedicalReportCreate = {
+  reportName: string;
+  reportLink: string;
 };
