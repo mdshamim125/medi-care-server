@@ -26,6 +26,8 @@ const handleStripeWebhookEvent = async (event: any) => {
         return { message: "Missing metadata" };
       }
 
+      console.log(appointmentId, paymentId);
+
       // Verify appointment exists
       const appointment = await prisma.appointment.findUnique({
         where: { id: appointmentId },
@@ -37,6 +39,7 @@ const handleStripeWebhookEvent = async (event: any) => {
         );
         return { message: "Appointment not found" };
       }
+
 
       // Update both appointment and payment in a transaction
       await prisma.$transaction(async (tx) => {

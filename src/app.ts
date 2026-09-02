@@ -3,20 +3,37 @@ import cors from "cors";
 import express, { Application, NextFunction, Request, Response } from "express";
 import httpStatus from "http-status";
 import cron from "node-cron";
-import globalErrorHandler from "./app/middlewares/globalErrorHandler";
 
+import globalErrorHandler from "./app/middlewares/globalErrorHandler";
 import router from "./app/routes";
 import { PaymentController } from "./app/modules/payment/payment.controller";
 import { AppointmentService } from "./app/modules/appointment/appointment.service";
 
 const app: Application = express();
+
+// ============================================
+// Global Middleware
+// ============================================
+
 app.use(cookieParser());
+
+// ============================================
+// Stripe Webhook
+// IMPORTANT:
+// This MUST come before express.json()
+// because Stripe requires the raw request body
+// for signature verification.
+// ============================================
 
 app.post(
   "/webhook",
   express.raw({ type: "application/json" }),
   PaymentController.handleStripeWebhookEvent,
 );
+
+// ============================================
+// CORS
+// ============================================
 
 app.use(
   cors({
@@ -29,31 +46,59 @@ app.use(
   }),
 );
 
-//parser
+// ============================================
+// Body Parsers
+// ============================================
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-cron.schedule("*/5 * * * *", () => {
+// ============================================
+// Unpaid Appointment Cleanup
+// Runs every 5 minutes
+// ============================================
+
+cron.schedule("*/5 * * * *", async () => {
   try {
     console.log(
       "🔄 Running unpaid appointment cleanup at",
       new Date().toISOString(),
     );
-    AppointmentService.cancelUnpaidAppointments();
+
+    await AppointmentService.cancelUnpaidAppointments();
+
+    console.log("✅ Unpaid appointment cleanup completed");
   } catch (err) {
     console.error("❌ Cron job error:", err);
   }
 });
 
+// ============================================
+// Health Check
+// ============================================
+
 app.get("/", (req: Request, res: Response) => {
-  res.send({
-    Message: "Medi care server..",
+  res.status(httpStatus.OK).json({
+    success: true,
+    message: "Medi care server..",
   });
 });
 
+// ============================================
+// API Routes
+// ============================================
+
 app.use("/api/v1", router);
 
+// ============================================
+// Global Error Handler
+// ============================================
+
 app.use(globalErrorHandler);
+
+// ============================================
+// 404 Handler
+// ============================================
 
 app.use((req: Request, res: Response, next: NextFunction) => {
   res.status(httpStatus.NOT_FOUND).json({
