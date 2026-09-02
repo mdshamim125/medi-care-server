@@ -1,4 +1,4 @@
-import { Patient, Prisma, UserStatus } from "@prisma/client";
+import { Patient, PaymentStatus, Prisma, UserStatus } from "@prisma/client";
 import { IPaginationOptions } from "../../interfaces/pagination";
 import { IPatientFilterRequest, IPatientUpdate } from "./patient.interface";
 import { paginationHelper } from "../../helpers/paginationHelper";
@@ -214,10 +214,246 @@ const softDelete = async (id: string): Promise<Patient | null> => {
   });
 };
 
+// Patient-specific service methods
+const getMyProfile = async (email: string) => {
+  const result = await prisma.patient.findUnique({
+    where: {
+      email,
+      isDeleted: false,
+    },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      profilePhoto: true,
+      contactNumber: true,
+      address: true,
+      createdAt: true,
+      updatedAt: true,
+      patientHealthData: true,
+      medicalReport: {
+        select: {
+          id: true,
+          reportName: true,
+          reportLink: true,
+          createdAt: true,
+        },
+      },
+    },
+  });
+
+  if (!result) {
+    throw new Error("Patient not found");
+  }
+
+  return result;
+};
+
+const getMyHealthData = async (email: string) => {
+  const patient = await prisma.patient.findUnique({
+    where: {
+      email,
+      isDeleted: false,
+    },
+    select: {
+      id: true,
+      patientHealthData: true,
+    },
+  });
+
+  if (!patient) {
+    throw new Error("Patient not found");
+  }
+
+  return patient.patientHealthData;
+};
+
+const getMyMedicalReports = async (email: string) => {
+  const patient = await prisma.patient.findUnique({
+    where: {
+      email,
+      isDeleted: false,
+    },
+    select: {
+      id: true,
+      medicalReport: {
+        select: {
+          id: true,
+          reportName: true,
+          reportLink: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+      },
+    },
+  });
+
+  if (!patient) {
+    throw new Error("Patient not found");
+  }
+
+  return patient.medicalReport;
+};
+
+const getDoctorPaidPatients = async (doctorEmail: string) => {
+  const doctor = await prisma.doctor.findUnique({
+    where: {
+      email: doctorEmail,
+      isDeleted: false,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (!doctor) {
+    throw new Error("Doctor not found");
+  }
+
+  const appointments = await prisma.appointment.findMany({
+    where: {
+      doctorId: doctor.id,
+      paymentStatus: PaymentStatus.PAID,
+    },
+    select: {
+      patient: {
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          profilePhoto: true,
+          contactNumber: true,
+          address: true,
+          createdAt: true,
+          updatedAt: true,
+          patientHealthData: true,
+          medicalReport: {
+            select: {
+              id: true,
+              reportName: true,
+              reportLink: true,
+              createdAt: true,
+              updatedAt: true,
+            },
+            orderBy: {
+              createdAt: "desc",
+            },
+          },
+        },
+      },
+    },
+  });
+
+  const uniquePatients = new Map<string, any>();
+
+  appointments.forEach(({ patient }) => {
+    if (patient && !uniquePatients.has(patient.id)) {
+      uniquePatients.set(patient.id, patient);
+    }
+  });
+
+  return [...uniquePatients.values()];
+};
+
+const getDoctorPatientById = async (doctorEmail: string, patientId: string) => {
+  const appointment = await prisma.appointment.findFirst({
+    where: {
+      patientId,
+      paymentStatus: PaymentStatus.PAID,
+      doctor: { email: doctorEmail, isDeleted: false },
+    },
+    select: { patientId: true },
+  });
+
+  if (!appointment) {
+    throw new Error("Patient not found in your appointments");
+  }
+
+  return prisma.patient.findUnique({
+    where: { id: appointment.patientId, isDeleted: false },
+    include: {
+      patientHealthData: true,
+      medicalReport: { orderBy: { createdAt: "desc" } },
+      appointment: {
+        where: { doctor: { email: doctorEmail } },
+        include: { schedule: true, prescription: true },
+        orderBy: { createdAt: "desc" },
+      },
+    },
+  });
+};
+
+const updateMyHealthData = async (email: string, payload: any) => {
+  const patient = await prisma.patient.findUnique({
+    where: {
+      email,
+      isDeleted: false,
+    },
+  });
+
+  if (!patient) {
+    throw new Error("Patient not found");
+  }
+
+  const result = await prisma.patientHealthData.upsert({
+    where: {
+      patientId: patient.id,
+    },
+    update: payload,
+    create: {
+      ...payload,
+      patientId: patient.id,
+    },
+  });
+
+  return result;
+};
+
+const uploadMedicalReport = async (
+  email: string,
+  payload: any,
+  file: Express.Multer.File | undefined,
+) => {
+  if (!file) {
+    throw new Error("File is required");
+  }
+
+  const patient = await prisma.patient.findUnique({
+    where: {
+      email,
+      isDeleted: false,
+    },
+  });
+
+  if (!patient) {
+    throw new Error("Patient not found");
+  }
+
+  const result = await prisma.medicalReport.create({
+    data: {
+      patientId: patient.id,
+      reportName: payload.reportName || file.originalname,
+      reportLink: `/uploads/${file.filename}`,
+    },
+  });
+
+  return result;
+};
+
 export const PatientService = {
   getAllFromDB,
   getByIdFromDB,
   updateIntoDB,
   deleteFromDB,
   softDelete,
+  getMyProfile,
+  getMyHealthData,
+  getMyMedicalReports,
+  getDoctorPaidPatients,
+  getDoctorPatientById,
+  updateMyHealthData,
+  uploadMedicalReport,
 };

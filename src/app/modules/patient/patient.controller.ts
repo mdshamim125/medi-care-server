@@ -67,10 +67,120 @@ const softDelete = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+// Patient-specific controllers
+const getMyProfile = catchAsync(async (req: Request, res: Response) => {
+  const email = req.user?.email;
+
+  const result = await PatientService.getMyProfile(email as string);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Patient profile retrieved successfully",
+    data: result,
+  });
+});
+
+const getMyHealthData = catchAsync(async (req: Request, res: Response) => {
+  const email = req.user?.email;
+
+  const result = await PatientService.getMyHealthData(email as string);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Patient health data retrieved successfully",
+    data: result,
+  });
+});
+
+const getMyMedicalReports = catchAsync(async (req: Request, res: Response) => {
+  const email = req.user?.email;
+
+  const result = await PatientService.getMyMedicalReports(email as string);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Medical reports retrieved successfully",
+    data: result,
+  });
+});
+
+const getDoctorPaidPatients = catchAsync(
+  async (req: Request, res: Response) => {
+    const email = req.user?.email;
+
+    const result = await PatientService.getDoctorPaidPatients(email as string);
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Doctor paid patients retrieved successfully",
+      data: result,
+    });
+  },
+);
+
+const getDoctorPatientById = catchAsync(async (req: Request, res: Response) => {
+  const result = await PatientService.getDoctorPatientById(
+    req.user?.email as string,
+    req.params.id as string,
+  );
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Doctor patient retrieved successfully",
+    data: result,
+  });
+});
+
+const updateMyHealthData = catchAsync(async (req: Request, res: Response) => {
+  const email = req.user?.email;
+
+  const result = await PatientService.updateMyHealthData(
+    email as string,
+    req.body,
+  );
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Health data updated successfully",
+    data: result,
+  });
+});
+
+const uploadMedicalReport = catchAsync(async (req: Request, res: Response) => {
+  const email = req.user?.email;
+  const file = req.file;
+
+  const result = await PatientService.uploadMedicalReport(
+    email as string,
+    req.body,
+    file,
+  );
+
+  sendResponse(res, {
+    statusCode: httpStatus.CREATED,
+    success: true,
+    message: "Medical report uploaded successfully",
+    data: result,
+  });
+});
+
 export const PatientController = {
   getAllFromDB,
   getByIdFromDB,
   updateIntoDB,
   deleteFromDB,
   softDelete,
+  getMyProfile,
+  getMyHealthData,
+  getMyMedicalReports,
+  getDoctorPaidPatients,
+  getDoctorPatientById,
+  updateMyHealthData,
+  uploadMedicalReport,
 };

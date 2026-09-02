@@ -50,10 +50,14 @@ model Prescription {
   patientId String
   patient   Patient @relation(fields: [patientId], references: [id])
 
+  healthIssue String
+  givenTest   String?
+
   instructions String
   followUpDate DateTime?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("prescriptions")
 }
