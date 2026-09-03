@@ -5,7 +5,7 @@ FROM oven/bun:1 AS builder
 
 WORKDIR /app
 
-# Install OpenSSL
+# Install OpenSSL for Prisma
 RUN apt-get update -y && \
     apt-get install -y openssl && \
     rm -rf /var/lib/apt/lists/*
@@ -19,8 +19,11 @@ COPY prisma ./prisma
 # Install dependencies
 RUN bun install --frozen-lockfile
 
-# Copy source code
+# Copy source
 COPY . .
+
+# Generate Prisma Client
+RUN bunx prisma generate --schema=./prisma/schema
 
 # Build TypeScript
 RUN bun run build
@@ -33,13 +36,16 @@ FROM node:20-bookworm-slim AS production
 
 WORKDIR /app
 
-# Install OpenSSL
+ENV NODE_ENV=production
+ENV PORT=5000
+
+# Install OpenSSL for Prisma
 RUN apt-get update -y && \
     apt-get install -y openssl && \
     rm -rf /var/lib/apt/lists/*
 
-# Copy package.json
-COPY --from=builder /app/package.json ./
+# Copy package
+COPY --from=builder /app/package.json ./package.json
 
 # Copy dependencies
 COPY --from=builder /app/node_modules ./node_modules
@@ -47,11 +53,9 @@ COPY --from=builder /app/node_modules ./node_modules
 # Copy compiled application
 COPY --from=builder /app/dist ./dist
 
-# Copy Prisma
+# Copy Prisma schema and generated client
 COPY --from=builder /app/prisma ./prisma
 
-# Application port
 EXPOSE 5000
 
-# Run migrations, then start server
 CMD ["sh", "-c", "npx prisma migrate deploy --schema=./prisma/schema && node ./dist/server.js"]

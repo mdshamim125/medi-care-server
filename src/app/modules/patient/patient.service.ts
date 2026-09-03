@@ -4,6 +4,9 @@ import { IPatientFilterRequest, IPatientUpdate } from "./patient.interface";
 import { paginationHelper } from "../../helpers/paginationHelper";
 import { patientSearchableFields } from "./patient.constant";
 import { prisma } from "../../shared/prisma";
+import { fileUploader } from "../../helpers/fileUploader";
+import fs from "fs/promises";
+import path from "path";
 
 const getAllFromDB = async (
   filters: IPatientFilterRequest,
@@ -298,6 +301,42 @@ const getMyMedicalReports = async (email: string) => {
   return patient.medicalReport;
 };
 
+const deleteMyMedicalReport = async (email: string, reportId: string) => {
+  const patient = await prisma.patient.findUnique({
+    where: { email, isDeleted: false },
+    select: { id: true },
+  });
+
+  if (!patient) {
+    throw new Error("Patient not found");
+  }
+
+  const report = await prisma.medicalReport.findFirst({
+    where: { id: reportId, patientId: patient.id },
+    select: { id: true, reportLink: true },
+  });
+
+  if (!report) {
+    throw new Error("Medical report not found");
+  }
+
+  const deletedReport = await prisma.medicalReport.delete({
+    where: { id: report.id },
+  });
+
+  try {
+    await fs.unlink(
+      path.join(process.cwd(), "uploads", path.basename(report.reportLink)),
+    );
+  } catch (error: any) {
+    if (error.code !== "ENOENT") {
+      console.error("Error deleting medical report file:", error);
+    }
+  }
+
+  return deletedReport;
+};
+
 const getDoctorPaidPatients = async (doctorEmail: string) => {
   const doctor = await prisma.doctor.findUnique({
     where: {
@@ -432,11 +471,17 @@ const uploadMedicalReport = async (
     throw new Error("Patient not found");
   }
 
+  const uploadedReport = await fileUploader.uploadToCloudinary(file);
+
+  if (!uploadedReport?.secure_url) {
+    throw new Error("Medical report upload failed");
+  }
+
   const result = await prisma.medicalReport.create({
     data: {
       patientId: patient.id,
       reportName: payload.reportName || file.originalname,
-      reportLink: `/uploads/${file.filename}`,
+      reportLink: uploadedReport.secure_url,
     },
   });
 
@@ -452,6 +497,7 @@ export const PatientService = {
   getMyProfile,
   getMyHealthData,
   getMyMedicalReports,
+  deleteMyMedicalReport,
   getDoctorPaidPatients,
   getDoctorPatientById,
   updateMyHealthData,

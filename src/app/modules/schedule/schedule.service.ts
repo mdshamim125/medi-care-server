@@ -90,6 +90,12 @@ const getAllFromDB = async (
 
   const andConditions = [];
 
+  andConditions.push({
+    startDateTime: {
+      gte: new Date(),
+    },
+  });
+
   if (startDate && endDate) {
     // Both dates provided - find schedules within the date range
     const startOfDay = new Date(startDate as string);

@@ -24,14 +24,10 @@ const uploadToCloudinary = async (file: Express.Multer.File) => {
   });
 
   // Upload an image
-  const uploadResult = await cloudinary.uploader
-    .upload(file.path, {
-      public_id: file.filename,
-    })
-    .catch((error) => {
-      console.log(error);
-    });
-  return uploadResult;
+  return cloudinary.uploader.upload(file.path, {
+    public_id: file.filename,
+    resource_type: "auto",
+  });
 };
 
 export const fileUploader = {

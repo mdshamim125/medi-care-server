@@ -26,6 +26,12 @@ router.get(
   PatientController.getMyMedicalReports,
 );
 
+router.delete(
+  "/my-medical-reports/:id",
+  auth(UserRole.PATIENT),
+  PatientController.deleteMyMedicalReport,
+);
+
 router.get(
   "/my-paid-patients",
   auth(UserRole.DOCTOR),

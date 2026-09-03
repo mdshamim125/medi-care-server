@@ -107,6 +107,22 @@ const getMyMedicalReports = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const deleteMyMedicalReport = catchAsync(
+  async (req: Request, res: Response) => {
+    const result = await PatientService.deleteMyMedicalReport(
+      req.user?.email as string,
+      req.params.id as string,
+    );
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Medical report deleted successfully",
+      data: result,
+    });
+  },
+);
+
 const getDoctorPaidPatients = catchAsync(
   async (req: Request, res: Response) => {
     const email = req.user?.email;
@@ -179,6 +195,7 @@ export const PatientController = {
   getMyProfile,
   getMyHealthData,
   getMyMedicalReports,
+  deleteMyMedicalReport,
   getDoctorPaidPatients,
   getDoctorPatientById,
   updateMyHealthData,
