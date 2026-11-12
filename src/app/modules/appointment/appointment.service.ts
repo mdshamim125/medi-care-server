@@ -243,7 +243,7 @@ const getMyAppointment = async (
 ) => {
   const { page, limit, skip, sortBy, sortOrder } =
     paginationHelper.calculatePagination(options);
-  const { ...filterData } = filters;
+  const { searchTerm, ...filterData } = filters;
 
   const andConditions: Prisma.AppointmentWhereInput[] = [];
 
@@ -257,6 +257,29 @@ const getMyAppointment = async (
     andConditions.push({
       doctor: {
         email: user?.email,
+      },
+    });
+  }
+
+  if (searchTerm) {
+    andConditions.push({
+      patient: {
+        is: {
+          OR: [
+            {
+              name: {
+                contains: searchTerm,
+                mode: "insensitive",
+              },
+            },
+            {
+              email: {
+                contains: searchTerm,
+                mode: "insensitive",
+              },
+            },
+          ],
+        },
       },
     });
   }

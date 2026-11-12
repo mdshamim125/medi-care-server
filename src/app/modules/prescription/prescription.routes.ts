@@ -15,7 +15,7 @@ router.get(
 
 router.get(
   "/my-prescription",
-  auth(UserRole.PATIENT),
+  auth(UserRole.DOCTOR, UserRole.PATIENT),
   PrescriptionController.patientPrescription,
 );
 

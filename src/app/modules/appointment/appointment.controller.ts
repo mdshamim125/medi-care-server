@@ -23,7 +23,7 @@ const createAppointment = catchAsync(async (req: Request & { user?: IAuthUser },
 
 const getMyAppointment = catchAsync(async (req: Request & { user?: IAuthUser }, res: Response) => {
     const user = req.user;
-    const filters = pick(req.query, ['status', 'paymentStatus']);
+    const filters = pick(req.query, ['status', 'paymentStatus', 'searchTerm']);
     const options = pick(req.query, ['limit', 'page', 'sortBy', 'sortOrder']);
 
     const result = await AppointmentService.getMyAppointment(user as IAuthUser, filters, options);
