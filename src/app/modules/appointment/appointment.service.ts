@@ -99,6 +99,30 @@ import { paginationHelper } from "../../helpers/paginationHelper";
 //   return result;
 // };
 
+const claimDoctorSchedule = async (
+  tx: Prisma.TransactionClient,
+  doctorId: string,
+  scheduleId: string,
+) => {
+  const claimed = await tx.doctorSchedules.updateMany({
+    where: {
+      doctorId,
+      scheduleId,
+      isBooked: false,
+    },
+    data: {
+      isBooked: true,
+    },
+  });
+
+  if (claimed.count !== 1) {
+    throw new ApiError(
+      httpStatus.CONFLICT,
+      "This doctor's time slot is no longer available",
+    );
+  }
+};
+
 const createAppointment = async (user: IAuthUser, payload: any) => {
   // ----------------------------------------
   // 1. Get patient
@@ -128,32 +152,14 @@ const createAppointment = async (user: IAuthUser, payload: any) => {
   // Keep Stripe OUTSIDE this transaction.
   const result = await prisma.$transaction(
     async (tx) => {
-      const schedule = await tx.doctorSchedules.findFirstOrThrow({
-        where: {
-          doctorId: doctorData.id,
-          scheduleId: payload.scheduleId,
-          isBooked: false,
-        },
-      });
+      await claimDoctorSchedule(tx, doctorData.id, payload.scheduleId);
 
       const appointmentData = await tx.appointment.create({
         data: {
           patientId: patientData.id,
           doctorId: doctorData.id,
-          scheduleId: schedule.scheduleId,
+          scheduleId: payload.scheduleId,
           videoCallingId,
-        },
-      });
-
-      await tx.doctorSchedules.update({
-        where: {
-          doctorId_scheduleId: {
-            doctorId: doctorData.id,
-            scheduleId: payload.scheduleId,
-          },
-        },
-        data: {
-          isBooked: true,
         },
       });
 
@@ -262,26 +268,63 @@ const getMyAppointment = async (
   }
 
   if (searchTerm) {
-    andConditions.push({
-      patient: {
-        is: {
-          OR: [
-            {
-              name: {
-                contains: searchTerm,
-                mode: "insensitive",
+    if (user?.role === UserRole.PATIENT) {
+      andConditions.push({
+        doctor: {
+          is: {
+            OR: [
+              {
+                name: {
+                  contains: searchTerm,
+                  mode: "insensitive",
+                },
               },
-            },
-            {
-              email: {
-                contains: searchTerm,
-                mode: "insensitive",
+              {
+                designation: {
+                  contains: searchTerm,
+                  mode: "insensitive",
+                },
               },
-            },
-          ],
+              {
+                doctorSpecialties: {
+                  some: {
+                    specialities: {
+                      is: {
+                        title: {
+                          contains: searchTerm,
+                          mode: "insensitive",
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            ],
+          },
         },
-      },
-    });
+      });
+    } else {
+      andConditions.push({
+        patient: {
+          is: {
+            OR: [
+              {
+                name: {
+                  contains: searchTerm,
+                  mode: "insensitive",
+                },
+              },
+              {
+                email: {
+                  contains: searchTerm,
+                  mode: "insensitive",
+                },
+              },
+            ],
+          },
+        },
+      });
+    }
   }
 
   if (Object.keys(filterData).length > 0) {
@@ -378,29 +421,50 @@ const updateAppointmentStatus = async (
       );
   }
 
-  const updated = await prisma.appointment.updateMany({
-    where: {
-      id: appointmentId,
-      status: {
-        notIn: [AppointmentStatus.COMPLETED, AppointmentStatus.CANCELED],
+  return await prisma.$transaction(async (tx) => {
+    const updated = await tx.appointment.updateMany({
+      where: {
+        id: appointmentId,
+        status: {
+          notIn: [AppointmentStatus.COMPLETED, AppointmentStatus.CANCELED],
+        },
       },
-    },
-    data: {
-      status,
-    },
-  });
+      data: {
+        status,
+      },
+    });
 
-  if (updated.count === 0) {
-    throw new ApiError(
-      httpStatus.CONFLICT,
-      "Completed or canceled appointments cannot be changed",
-    );
-  }
+    if (updated.count === 0) {
+      throw new ApiError(
+        httpStatus.CONFLICT,
+        "Completed or canceled appointments cannot be changed",
+      );
+    }
 
-  return await prisma.appointment.findUniqueOrThrow({
-    where: {
-      id: appointmentId,
-    },
+    if (status === AppointmentStatus.CANCELED) {
+      const released = await tx.doctorSchedules.updateMany({
+        where: {
+          doctorId: appointmentData.doctorId,
+          scheduleId: appointmentData.scheduleId,
+        },
+        data: {
+          isBooked: false,
+        },
+      });
+
+      if (released.count !== 1) {
+        throw new ApiError(
+          httpStatus.CONFLICT,
+          "The appointment time slot could not be released",
+        );
+      }
+    }
+
+    return tx.appointment.findUniqueOrThrow({
+      where: {
+        id: appointmentId,
+      },
+    });
   });
 };
 
@@ -633,17 +697,11 @@ const createAppointmentWithPayLater = async (user: IAuthUser, payload: any) => {
     },
   });
 
-  await prisma.doctorSchedules.findFirstOrThrow({
-    where: {
-      doctorId: doctorData.id,
-      scheduleId: payload.scheduleId,
-      isBooked: false,
-    },
-  });
-
   const videoCallingId = uuidv4();
 
   const result = await prisma.$transaction(async (tnx) => {
+    await claimDoctorSchedule(tnx, doctorData.id, payload.scheduleId);
+
     const appointmentData = await tnx.appointment.create({
       data: {
         patientId: patientData.id,
@@ -655,18 +713,6 @@ const createAppointmentWithPayLater = async (user: IAuthUser, payload: any) => {
         patient: true,
         doctor: true,
         schedule: true,
-      },
-    });
-
-    await tnx.doctorSchedules.update({
-      where: {
-        doctorId_scheduleId: {
-          doctorId: doctorData.id,
-          scheduleId: payload.scheduleId,
-        },
-      },
-      data: {
-        isBooked: true,
       },
     });
 
