@@ -355,12 +355,28 @@ const updateAppointmentStatus = async (
       );
   }
 
-  return await prisma.appointment.update({
+  const updated = await prisma.appointment.updateMany({
     where: {
       id: appointmentId,
+      status: {
+        notIn: [AppointmentStatus.COMPLETED, AppointmentStatus.CANCELED],
+      },
     },
     data: {
       status,
+    },
+  });
+
+  if (updated.count === 0) {
+    throw new ApiError(
+      httpStatus.CONFLICT,
+      "Completed or canceled appointments cannot be changed",
+    );
+  }
+
+  return await prisma.appointment.findUniqueOrThrow({
+    where: {
+      id: appointmentId,
     },
   });
 };
