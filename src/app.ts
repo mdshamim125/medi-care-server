@@ -41,6 +41,8 @@ app.use(
       "http://localhost:3000",
       "http://localhost:3001",
       "https://medi-care-frontend-sigma.vercel.app",
+      "http://127.0.0.1:30000",
+      "http://192.168.49.2:30000",
     ],
     credentials: true,
   }),
