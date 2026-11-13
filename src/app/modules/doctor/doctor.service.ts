@@ -169,6 +169,13 @@ const getByIdFromDB = async (id: string) => {
         },
       },
       doctorSchedules: {
+        where: {
+          schedule: {
+            startDateTime: {
+              gte: new Date(),
+            },
+          },
+        },
         include: {
           schedule: {
             include: {

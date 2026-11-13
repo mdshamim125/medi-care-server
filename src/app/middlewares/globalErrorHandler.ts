@@ -22,12 +22,16 @@ const globalErrorHandler = (
 ) => {
   console.log({ err });
 
-  let statusCode = httpStatus.INTERNAL_SERVER_ERROR;
+  let statusCode = err.statusCode || httpStatus.INTERNAL_SERVER_ERROR;
   let success = false;
   let message = err.message || "Something went wrong!";
   let error = err;
 
-  if (err instanceof Prisma.PrismaClientValidationError) {
+  if (err.name === "ZodError") {
+    statusCode = httpStatus.BAD_REQUEST;
+    message = "Validation Error";
+    error = err.issues;
+  } else if (err instanceof Prisma.PrismaClientValidationError) {
     message = "Validation Error";
     error = err.message;
   } else if (err instanceof Prisma.PrismaClientKnownRequestError) {
