@@ -42,6 +42,9 @@ const insertIntoDB = async (user: IAuthUser, payload: any) => {
     });
 
     const averageRating = await tx.review.aggregate({
+      where: {
+        doctorId: result.doctorId,
+      },
       _avg: {
         rating: true,
       },
@@ -62,8 +65,14 @@ const insertIntoDB = async (user: IAuthUser, payload: any) => {
 
 const getAllFromDB = async (filters: any, options: IPaginationOptions) => {
   const { limit, page, skip } = paginationHelper.calculatePagination(options);
-  const { patientEmail, doctorEmail } = filters;
+  const { patientEmail, doctorEmail, doctorId } = filters;
   const andConditions = [];
+
+  if (doctorId) {
+    andConditions.push({
+      doctorId,
+    });
+  }
 
   if (patientEmail) {
     andConditions.push({
