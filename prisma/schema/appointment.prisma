@@ -6,7 +6,7 @@ model Appointment {
   doctorId String
   doctor   Doctor @relation(fields: [doctorId], references: [id])
 
-  scheduleId String   @unique
+  scheduleId String
   schedule   Schedule @relation(fields: [scheduleId], references: [id])
 
   videoCallingId  String
@@ -19,6 +19,7 @@ model Appointment {
   prescription    Prescription?
   review          Review?
 
+  @@index([scheduleId])
   @@map("appointments")
 }
 

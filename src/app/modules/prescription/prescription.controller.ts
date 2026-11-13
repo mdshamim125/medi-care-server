@@ -26,9 +26,11 @@ const insertIntoDB = catchAsync(
 const patientPrescription = catchAsync(
   async (req: Request & { user?: IAuthUser }, res: Response) => {
     const user = req.user;
+    const filters = pick(req.query, ["searchTerm", "followUp"]);
     const options = pick(req.query, ["limit", "page", "sortBy", "sortOrder"]);
     const result = await PrescriptionService.patientPrescription(
       user as IAuthUser,
+      filters,
       options,
     );
     sendResponse(res, {

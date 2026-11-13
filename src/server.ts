@@ -18,9 +18,9 @@ async function bootstrap() {
 
     const PORT = Number(config.port) || 5000;
 
-server = app.listen(PORT, "0.0.0.0", () => {
-  console.log(`🚀 Server is running on port ${PORT}`);
-});
+    server = app.listen(PORT, "0.0.0.0", () => {
+      console.log(`🚀 Server is running successfully on port ${PORT}`);
+    });
 
     // Function to gracefully shut down the server
     const exitHandler = () => {

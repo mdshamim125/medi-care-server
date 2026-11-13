@@ -6,6 +6,27 @@ import { paginationHelper } from "../../helpers/paginationHelper";
 import { prisma } from "../../shared/prisma";
 import { askOpenRouter } from "../../helpers/openRouterClient";
 
+const getScheduleAvailability = <
+  T extends {
+    doctorId: string;
+    schedule: { appointments: Array<{ doctorId: string; status: string }> };
+  },
+>(
+  doctorSchedule: T,
+) => {
+  const { appointments, ...schedule } = doctorSchedule.schedule;
+  const appointment = appointments.find(
+    (item) => item.doctorId === doctorSchedule.doctorId,
+  );
+
+  return {
+    ...doctorSchedule,
+    schedule,
+    isBooked: Boolean(appointment),
+    appointmentStatus: appointment?.status ?? null,
+  };
+};
+
 const getAllFromDB = async (
   filters: IDoctorFilterRequest,
   options: IPaginationOptions,
@@ -91,7 +112,21 @@ const getAllFromDB = async (
           },
         },
         include: {
-          schedule: true,
+          schedule: {
+            include: {
+              appointments: {
+                where: {
+                  status: {
+                    not: "CANCELED",
+                  },
+                },
+                select: {
+                  doctorId: true,
+                  status: true,
+                },
+              },
+            },
+          },
         },
       },
       review: {
@@ -114,11 +149,14 @@ const getAllFromDB = async (
       page,
       limit,
     },
-    data: result,
+    data: result.map((doctor) => ({
+      ...doctor,
+      doctorSchedules: doctor.doctorSchedules.map(getScheduleAvailability),
+    })),
   };
 };
 
-const getByIdFromDB = async (id: string): Promise<Doctor | null> => {
+const getByIdFromDB = async (id: string) => {
   const result = await prisma.doctor.findUnique({
     where: {
       id,
@@ -132,13 +170,34 @@ const getByIdFromDB = async (id: string): Promise<Doctor | null> => {
       },
       doctorSchedules: {
         include: {
-          schedule: true,
+          schedule: {
+            include: {
+              appointments: {
+                where: {
+                  status: {
+                    not: "CANCELED",
+                  },
+                },
+                select: {
+                  doctorId: true,
+                  status: true,
+                },
+              },
+            },
+          },
         },
       },
       review: true,
     },
   });
-  return result;
+  if (!result) {
+    return null;
+  }
+
+  return {
+    ...result,
+    doctorSchedules: result.doctorSchedules.map(getScheduleAvailability),
+  };
 };
 
 const updateIntoDB = async (id: string, payload: IDoctorUpdate) => {

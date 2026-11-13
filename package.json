@@ -8,7 +8,7 @@
     "schema": "./prisma/schema"
   },
   "scripts": {
-    "dev": "bun --watch src/server.ts",
+    "dev": "bun --watch --poll src/server.ts",
     "build": "tsc",
     "start": "node ./dist/server.js",
     "db:generate": "prisma generate --schema=./prisma/schema",

@@ -60,17 +60,67 @@ const insertIntoDB = async (
 
 const patientPrescription = async (
   user: IAuthUser,
+  filters: { searchTerm?: string; followUp?: string },
   options: IPaginationOptions,
 ) => {
+  if (!user?.email) {
+    throw new ApiError(httpStatus.UNAUTHORIZED, "Authentication required");
+  }
+
   const { limit, page, skip } =
     paginationHelper.calculatePagination(options);
 
+  const andConditions: Prisma.PrescriptionWhereInput[] = [
+    user.role === "DOCTOR"
+      ? { doctor: { email: user.email } }
+      : { patient: { email: user.email } },
+  ];
+
+  if (filters.searchTerm) {
+    andConditions.push({
+      OR: [
+        {
+          healthIssue: {
+            contains: filters.searchTerm,
+            mode: "insensitive",
+          },
+        },
+        {
+          patient: {
+            is: {
+              OR: [
+                {
+                  name: {
+                    contains: filters.searchTerm,
+                    mode: "insensitive",
+                  },
+                },
+                {
+                  email: {
+                    contains: filters.searchTerm,
+                    mode: "insensitive",
+                  },
+                },
+              ],
+            },
+          },
+        },
+      ],
+    });
+  }
+
+  if (filters.followUp === "scheduled") {
+    andConditions.push({ followUpDate: { not: null } });
+  } else if (filters.followUp === "none") {
+    andConditions.push({ followUpDate: null });
+  }
+
+  const whereConditions: Prisma.PrescriptionWhereInput = {
+    AND: andConditions,
+  };
+
   const result = await prisma.prescription.findMany({
-    where: {
-      patient: {
-        email: user?.email,
-      },
-    },
+    where: whereConditions,
     skip,
     take: limit,
     orderBy:
@@ -80,16 +130,16 @@ const patientPrescription = async (
     include: {
       doctor: true,
       patient: true,
-      appointment: true,
+      appointment: {
+        include: {
+          schedule: true,
+        },
+      },
     },
   });
 
   const total = await prisma.prescription.count({
-    where: {
-      patient: {
-        email: user?.email,
-      },
-    },
+    where: whereConditions,
   });
 
   return {
