@@ -26,6 +26,12 @@ router.get(
     AppointmentController.getMyAppointment
 )
 
+router.get(
+    '/my-appointment/:id',
+    auth(UserRole.PATIENT),
+    AppointmentController.getMyAppointmentById
+)
+
 router.post(
     '/',
     auth(UserRole.PATIENT),
