@@ -37,6 +37,23 @@ const getMyAppointment = catchAsync(async (req: Request & { user?: IAuthUser }, 
     });
 });
 
+const getMyAppointmentById = catchAsync(async (req: Request & { user?: IAuthUser }, res: Response) => {
+    const appointmentId = Array.isArray(req.params.id)
+        ? req.params.id[0]
+        : req.params.id;
+    const appointment = await AppointmentService.getMyAppointmentById(
+        req.user as IAuthUser,
+        appointmentId,
+    );
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: 'My Appointment retrieved successfully',
+        data: appointment,
+    });
+});
+
 const getAllFromDB = catchAsync(async (req: Request, res: Response) => {
     const filters = pick(req.query, appointmentFilterableFields)
     const options = pick(req.query, ['limit', 'page', 'sortBy', 'sortOrder']);
@@ -94,6 +111,7 @@ const initiatePayment = catchAsync(async (req: Request & { user?: IAuthUser }, r
 export const AppointmentController = {
     createAppointment,
     getMyAppointment,
+    getMyAppointmentById,
     getAllFromDB,
     changeAppointmentStatus,
     createAppointmentWithPayLater,

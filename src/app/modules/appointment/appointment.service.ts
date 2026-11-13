@@ -397,6 +397,46 @@ const getMyAppointment = async (
   };
 };
 
+const getMyAppointmentById = async (user: IAuthUser, appointmentId: string) => {
+  if (!user) {
+    throw new ApiError(httpStatus.UNAUTHORIZED, "You are not authorized");
+  }
+  if (user.role !== UserRole.PATIENT) {
+    throw new ApiError(httpStatus.FORBIDDEN, "Forbidden");
+  }
+
+  const appointment = await prisma.appointment.findFirst({
+    where: {
+      id: appointmentId,
+      patient: {
+        email: user.email,
+      },
+    },
+    include: {
+      doctor: {
+        include: {
+          doctorSpecialties: {
+            include: {
+              specialities: true,
+            },
+          },
+        },
+      },
+      schedule: true,
+      prescription: true,
+      review: true,
+      payment: true,
+      patient: true,
+    },
+  });
+
+  if (!appointment) {
+    throw new ApiError(httpStatus.NOT_FOUND, "Appointment not found");
+  }
+
+  return appointment;
+};
+
 // task get all data from db (appointment data) - admin
 
 const updateAppointmentStatus = async (
@@ -805,6 +845,7 @@ const initiatePaymentForAppointment = async (
 export const AppointmentService = {
   createAppointment,
   getMyAppointment,
+  getMyAppointmentById,
   updateAppointmentStatus,
   getAllFromDB,
   cancelUnpaidAppointments,
