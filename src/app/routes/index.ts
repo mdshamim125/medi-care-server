@@ -12,6 +12,7 @@ import { ReviewRoutes } from "../modules/review/review.routes";
 import { MetaRoutes } from "../modules/meta/meta.routes";
 import { AppointmentRoutes } from "../modules/appointment/appointment.routes";
 import { PaymentRoutes } from "../modules/payment/payment.routes";
+import { ContactRoutes } from "../modules/contact/contact.routes";
 import { apiLimiter } from "../middlewares/rateLimiter";
 
 
@@ -71,6 +72,10 @@ const moduleRoutes = [
   {
     path: "/meta",
     route: MetaRoutes,
+  },
+  {
+    path: "/contact",
+    route: ContactRoutes,
   },
 ];
 
